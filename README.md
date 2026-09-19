@@ -82,6 +82,57 @@ if (!access.paid) await gate.recordUnit(access.keyId);
 
 `access.status` is already the right one: `401` unauthenticated, `402` free tier spent, `429` rate limited, `503` store unreachable.
 
+## Getting `rawBody` right
+
+This is where App Attest breaks for most people, and it fails in a way that looks like a cryptography problem: every signature is rejected, so they conclude the library is wrong and stop checking.
+
+The assertion covers a SHA-256 of the body **as sent**. Once a framework has parsed it, those bytes are gone — `JSON.stringify(req.body)` is a different string the moment the client's encoder ordered keys differently, spaced differently, or escaped a character differently. One byte is enough.
+
+So capture the raw body before any parser touches it, which means turning the parser off on these routes:
+
+**Express**
+
+```ts
+import { readRawBody, parseJson } from 'app-attest-gate';
+
+// No body parser on this route. express.json() above it would consume the stream.
+app.post('/organize', express.raw({ type: '*/*' }), async (req, res) => {
+  const rawBody = req.body as Buffer;      // express.raw leaves it a Buffer
+  const access = await gate.resolve({ headers: req.headers, rawBody, body: parseJson(rawBody) });
+  ...
+});
+```
+
+**Vercel / Next.js pages API**
+
+```ts
+export const config = { api: { bodyParser: false } };
+
+export default async function handler(req, res) {
+  const rawBody = await readRawBody(req);
+  const access = await gate.resolve({ headers: req.headers, rawBody, body: parseJson(rawBody) });
+  ...
+}
+```
+
+**Anything built on fetch** — Workers, Deno, Bun, Next.js route handlers
+
+```ts
+import { rawBodyFromRequest, parseJson } from 'app-attest-gate';
+
+export async function POST(request: Request) {
+  const rawBody = await rawBodyFromRequest(request);   // a body reads only once
+  const headers = Object.fromEntries(request.headers);
+  const access = await gate.resolve({ headers, rawBody, body: parseJson(rawBody) });
+  ...
+}
+```
+
+Both readers take a `maxBytes` limit, one megabyte by default. The signature has not been checked yet at that point, so it is the only thing between you and an unauthenticated caller streaming forever.
+
+Complete, runnable versions of all three are in [`examples/`](examples).
+
+
 ## The StoreKit pairing
 
 This is the part that does not exist anywhere else.
