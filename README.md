@@ -5,8 +5,10 @@
 The parts of Apple App Attest that everyone hand-rolls, and usually gets wrong — plus the StoreKit 2 pairing nobody ships at all.
 
 ```sh
-npm install app-attest-gate
+npm install github:Staberman/app-attest-gate
 ```
+
+<sub>The name `app-attest-gate` is reserved on npm; the registry is under maintenance as of publication. Installing from git builds the package on install.</sub>
 
 ## The iOS side
 

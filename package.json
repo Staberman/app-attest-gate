@@ -1,7 +1,7 @@
 {
   "name": "app-attest-gate",
   "version": "1.0.0",
-  "description": "The parts of Apple App Attest everyone hand-rolls wrong: single-use challenges, atomic replay protection, per-assertion environment pinning, request-body binding — plus StoreKit 2 entitlements and a server-metered free tier.",
+  "description": "The parts of Apple App Attest everyone hand-rolls wrong: single-use challenges, atomic replay protection, per-assertion environment pinning, request-body binding \u2014 plus StoreKit 2 entitlements and a server-metered free tier.",
   "keywords": [
     "app-attest",
     "appattest",
@@ -37,6 +37,7 @@
     "node": ">=18"
   },
   "scripts": {
+    "prepare": "npm run build",
     "build": "tsc -p tsconfig.build.json",
     "test": "vitest run",
     "typecheck": "tsc --noEmit"
