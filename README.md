@@ -1,5 +1,7 @@
 # app-attest-gate
 
+[![CI](https://github.com/Staberman/app-attest-gate/actions/workflows/ci.yml/badge.svg)](https://github.com/Staberman/app-attest-gate/actions/workflows/ci.yml) [![npm](https://img.shields.io/npm/v/app-attest-gate?style=flat-square)](https://www.npmjs.com/package/app-attest-gate)
+
 The parts of Apple App Attest that everyone hand-rolls, and usually gets wrong — plus the StoreKit 2 pairing nobody ships at all.
 
 ```sh
