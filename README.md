@@ -8,6 +8,10 @@ The parts of Apple App Attest that everyone hand-rolls, and usually gets wrong â
 npm install app-attest-gate
 ```
 
+## The iOS side
+
+**[AppAttestClient](https://github.com/Staberman/app-attest-client)** is the Swift half: a Secure Enclave signer that speaks exactly these headers, with the concurrent-registration race already handled. Use either alone â€” they agree on the wire format, they do not depend on each other.
+
 ## This is not another attestation verifier
 
 [`node-app-attest`](https://www.npmjs.com/package/node-app-attest) already verifies attestations and assertions, it does it well, and **this package uses it**. What it deliberately leaves to you is everything around the crypto:
