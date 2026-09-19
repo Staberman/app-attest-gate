@@ -176,3 +176,38 @@ describe('missing credentials', () => {
     expect(await g.resolve({ headers: headers(), rawBody: BODY })).toMatchObject({ ok: false, status: 401, error: 'Unknown key' });
   });
 });
+
+describe('when the store is down', () => {
+  /** A store whose every read throws, as a Redis outage looks from here. */
+  function brokenStore() {
+    const store = createMemoryStore();
+    return { ...store, loadKey: async () => { throw new Error('ECONNREFUSED'); } };
+  }
+
+  it('reports 503 instead of throwing out of resolve()', async () => {
+    const g = gate({ store: brokenStore() });
+    const result = await g.resolve({ headers: headers(), rawBody: BODY });
+    expect(result).toMatchObject({ ok: false, status: 503 });
+  });
+
+  it('does not let a store failure read as a bad signature', async () => {
+    const g = gate({ store: brokenStore() });
+    const result = await g.resolve({ headers: headers(), rawBody: BODY });
+    expect(result.ok).toBe(false);
+    if (!result.ok) expect(result.status).not.toBe(401);
+  });
+});
+
+describe('an unknown client address', () => {
+  it('does not put every caller into one shared daily bucket', async () => {
+    // With no x-forwarded-for, a shared 'unknown' bucket would collapse the
+    // free tier for everyone at once. The per-key limit still holds.
+    const g = await registered(gate({ meter: { perKey: 10, windowDays: 7, perIpPerDay: 1 } }));
+    let count = 0;
+    verifyAssertion.mockImplementation(() => ({ signCount: (count += 1) }));
+
+    expect(await g.resolve({ headers: headers(), rawBody: BODY })).toMatchObject({ ok: true });
+    expect(await g.resolve({ headers: headers(), rawBody: BODY })).toMatchObject({ ok: true });
+    expect(await g.resolve({ headers: headers(), rawBody: BODY })).toMatchObject({ ok: true });
+  });
+});

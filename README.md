@@ -1,14 +1,16 @@
 # app-attest-gate
 
-[![CI](https://github.com/Staberman/app-attest-gate/actions/workflows/ci.yml/badge.svg)](https://github.com/Staberman/app-attest-gate/actions/workflows/ci.yml) [![npm](https://img.shields.io/npm/v/app-attest-gate?style=flat-square)](https://www.npmjs.com/package/app-attest-gate)
+[![CI](https://github.com/Staberman/app-attest-gate/actions/workflows/ci.yml/badge.svg)](https://github.com/Staberman/app-attest-gate/actions/workflows/ci.yml)
 
-The parts of Apple App Attest that everyone hand-rolls, and usually gets wrong — plus the StoreKit 2 pairing nobody ships at all.
+A Node/TypeScript library that lets your server prove a request came from a genuine, unmodified copy of your iOS app — and, separately, that the caller actually paid.
+
+It is the parts of Apple App Attest that everyone hand-rolls and usually gets wrong, plus the StoreKit 2 pairing nobody ships at all.
 
 ```sh
 npm install github:Staberman/app-attest-gate
 ```
 
-<sub>The name `app-attest-gate` is reserved on npm; the registry is under maintenance as of publication. Installing from git builds the package on install.</sub>
+<sub>Not on npm yet — installing from git builds the package on install.</sub>
 
 ## The iOS side
 
@@ -61,7 +63,7 @@ const gate = createGate({
 Two endpoints for registration:
 
 ```ts
-// GET /attest/challenge
+// POST /attest/challenge — issuing a challenge is a write
 return Response.json({ challenge: await gate.challenge() });
 
 // POST /attest/register
@@ -78,6 +80,9 @@ const result = await doTheWork();
 
 // Counted AFTER the work succeeded — a failure is not a unit.
 if (!access.paid) await gate.recordUnit(access.keyId);
+
+// And if the work produced nothing, give the network its slot back:
+//   if (!access.paid) await gate.releaseIpSlot(access.ip);
 ```
 
 `access.status` is already the right one: `401` unauthenticated, `402` free tier spent, `429` rate limited, `503` store unreachable.
@@ -168,7 +173,7 @@ Writing your own is a ten-method interface. Two of those methods, `advanceSignCo
 
 ## Requirements
 
-Node 18+. `@apple/app-store-server-library` is an optional peer dependency, loaded only if you configure `entitlement`.
+Node 18+, **ESM only** — `import`, not `require`. `@apple/app-store-server-library` is an optional peer dependency, loaded only if you configure `entitlement`.
 
 ## Credits
 

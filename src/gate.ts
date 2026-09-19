@@ -1,7 +1,7 @@
 import { issueChallenge, registerKey, verifyRequestAssertion, KEY_TTL_SECONDS } from './attest.js';
 import { isPaidTransaction } from './entitlement.js';
 import { ipScope, recordUnit, unitsUsed } from './meter.js';
-import { DAY_SECONDS, clientIp, countInWindow, orElse, releaseFromWindow } from './window.js';
+import { DAY_SECONDS, UNKNOWN_IP, clientIp, countInWindow, orElse, releaseFromWindow } from './window.js';
 import { HEADERS, type Access, type GateConfig } from './types.js';
 
 /**
@@ -99,11 +99,27 @@ export function createGate(config: GateConfig): Gate {
         return { ok: false, status: 401, error: 'Request is stale' };
       }
 
-      const verified = await verifyRequestAssertion(config, { keyId, assertion, payload: rawBody });
+      // Everything below needs the store. Without it there is no counter to
+      // check, so a failure here cannot be waved through the way a failed
+      // meter read can — it is reported as 503, which is what the type and
+      // the README have always promised.
+      let verified: Awaited<ReturnType<typeof verifyRequestAssertion>>;
+      try {
+        verified = await verifyRequestAssertion(config, { keyId, assertion, payload: rawBody });
+      } catch (err) {
+        log('store unavailable', { name: (err as Error)?.name });
+        return { ok: false, status: 503, error: 'Service is not available' };
+      }
       if (!verified.ok) return verified;
 
       if (config.rateLimit) {
-        const requests = await countInWindow(config.store, `key:${keyId}`, config.rateLimit.windowSeconds, now);
+        let requests: number;
+        try {
+          requests = await countInWindow(config.store, `key:${keyId}`, config.rateLimit.windowSeconds, now);
+        } catch (err) {
+          log('store unavailable', { name: (err as Error)?.name });
+          return { ok: false, status: 503, error: 'Service is not available' };
+        }
         if (requests > config.rateLimit.maxPerWindow) {
           return { ok: false, status: 429, error: 'Too many requests', retryAfterSeconds: config.rateLimit.windowSeconds };
         }
@@ -116,12 +132,15 @@ export function createGate(config: GateConfig): Gate {
       const meter = config.meter;
       if (!meter || paid) return { ok: true, keyId, ip, paid, unitsUsed: 0 };
 
-      const used = await unitsUsed(config.store, meter, keyId, now);
+      const used = await orElse('meter read', unitsUsed(config.store, meter, keyId, now), 0, log);
       if (used >= meter.perKey) {
         return { ok: false, status: 402, error: 'Free limit reached' };
       }
 
-      if (meter.perIpPerDay !== undefined) {
+      // An unknown address would put every caller into one shared bucket and
+      // collapse the free tier for all of them at once. Better no ceiling than
+      // the wrong one; the per-key limit still holds.
+      if (meter.perIpPerDay !== undefined && ip !== UNKNOWN_IP) {
         // Reserved atomically here, given back by the caller if the work
         // produces nothing. If the store cannot answer it stands open — the
         // per-key limit still holds. This is a ceiling on the NETWORK, not on

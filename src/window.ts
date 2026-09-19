@@ -62,7 +62,18 @@ export function orElse<T>(
   });
 }
 
-/** First entry of `x-forwarded-for`, or `x-real-ip`. */
+/** What `clientIp` returns when no address header is present. */
+export const UNKNOWN_IP = 'unknown';
+
+/**
+ * First entry of `x-forwarded-for`, or `x-real-ip`.
+ *
+ * ⚠️ **A client can forge both of these.** Any per-IP ceiling you build on this
+ * is only as trustworthy as the proxy in front of you: it must OVERWRITE the
+ * header rather than append to it. Vercel, Cloudflare and a correctly
+ * configured nginx do. A bare Node server does not, and there the ceiling is
+ * advisory at best.
+ */
 export function clientIp(headers: Record<string, unknown>): string {
   const read = (name: string): string | undefined => {
     const raw = headers[name];
@@ -71,5 +82,5 @@ export function clientIp(headers: Record<string, unknown>): string {
   };
   const forwarded = read('x-forwarded-for');
   if (forwarded) return forwarded.split(',')[0]!.trim();
-  return read('x-real-ip') ?? 'unknown';
+  return read('x-real-ip') ?? UNKNOWN_IP;
 }
