@@ -1,16 +1,14 @@
 # app-attest-gate
 
-[![CI](https://github.com/Staberman/app-attest-gate/actions/workflows/ci.yml/badge.svg)](https://github.com/Staberman/app-attest-gate/actions/workflows/ci.yml)
+[![CI](https://github.com/Staberman/app-attest-gate/actions/workflows/ci.yml/badge.svg)](https://github.com/Staberman/app-attest-gate/actions/workflows/ci.yml) [![npm](https://img.shields.io/npm/v/app-attest-gate?style=flat-square&color=CB3837)](https://www.npmjs.com/package/app-attest-gate)
 
 A Node/TypeScript library that lets your server prove a request came from a genuine, unmodified copy of your iOS app — and, separately, that the caller actually paid.
 
 It is the parts of Apple App Attest that everyone hand-rolls and usually gets wrong, plus the StoreKit 2 pairing nobody ships at all.
 
 ```sh
-npm install github:Staberman/app-attest-gate
+npm install app-attest-gate
 ```
-
-<sub>Not on npm yet — installing from git builds the package on install.</sub>
 
 ## The iOS side
 
