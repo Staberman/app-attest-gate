@@ -3,7 +3,9 @@
 This package sits on an authentication path. If you find a vulnerability in it,
 please do not open a public issue.
 
-**Report it to lautaro@staberman.com.ar.** Include what you found, how to
+**Report it privately** through GitHub's
+[Report a vulnerability](https://github.com/Staberman/app-attest-gate/security/advisories/new)
+form, or by email to lautaro@staberman.com.ar. Include what you found, how to
 reproduce it, and what it lets an attacker do. You will get an answer within a
 few days.
 
